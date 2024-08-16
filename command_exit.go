@@ -2,6 +2,7 @@ package main
 
 import "os"
 
-func commandExit() {
-	os.Exit(0)
+func commandExit(_ *config) error {
+	defer os.Exit(0)
+	return nil
 }
