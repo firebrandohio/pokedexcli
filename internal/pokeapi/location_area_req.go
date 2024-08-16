@@ -58,3 +58,51 @@ func (c *Client) ListLocationAreas(overrideURL *string) (LocationAreasResp, erro
 
 	return locationAreasResp, nil
 }
+
+func (c *Client) GetLocationArea(locationAreaName string) (LocationArea, error) {
+
+	endpoint := "/location-area/" + locationAreaName
+	fullURL := baseURL + endpoint
+
+	data, ok := c.cache.Get(fullURL)
+	if ok {
+		//cache hit
+		locationArea := LocationArea{}
+		err := json.Unmarshal(data, &locationArea)
+		if err != nil {
+			return LocationArea{}, err
+		}
+		return locationArea, nil
+	}
+
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return LocationArea{}, err
+	}
+
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return LocationArea{}, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode > 399 {
+		return LocationArea{}, fmt.Errorf("bad status code: %v", res.StatusCode)
+	}
+
+	data, err = io.ReadAll(res.Body)
+	if err != nil {
+		return LocationArea{}, err
+	}
+
+	locationArea := LocationArea{}
+	err = json.Unmarshal(data, &locationArea)
+	if err != nil {
+		return LocationArea{}, err
+	}
+
+	c.cache.Add(fullURL, data)
+
+	return locationArea, nil
+}
