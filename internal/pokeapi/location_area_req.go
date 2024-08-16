@@ -16,6 +16,17 @@ func (c *Client) ListLocationAreas(overrideURL *string) (LocationAreasResp, erro
 		fullURL = baseURL + endpoint
 	}
 
+	data, ok := c.cache.Get(fullURL)
+	if ok {
+		//cache hit
+		locationAreasResp := LocationAreasResp{}
+		err := json.Unmarshal(data, &locationAreasResp)
+		if err != nil {
+			return LocationAreasResp{}, err
+		}
+		return locationAreasResp, nil
+	}
+
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		return LocationAreasResp{}, err
@@ -32,7 +43,7 @@ func (c *Client) ListLocationAreas(overrideURL *string) (LocationAreasResp, erro
 		return LocationAreasResp{}, fmt.Errorf("bad status code: %v", res.StatusCode)
 	}
 
-	data, err := io.ReadAll(res.Body)
+	data, err = io.ReadAll(res.Body)
 	if err != nil {
 		return LocationAreasResp{}, err
 	}
@@ -42,6 +53,8 @@ func (c *Client) ListLocationAreas(overrideURL *string) (LocationAreasResp, erro
 	if err != nil {
 		return LocationAreasResp{}, err
 	}
+
+	c.cache.Add(fullURL, data)
 
 	return locationAreasResp, nil
 }
